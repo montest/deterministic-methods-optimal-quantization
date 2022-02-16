@@ -11,6 +11,7 @@ class VoronoiQuantization1D(ABC):
 
     lower_bound_support: float = field(init=False)
     upper_bound_support: float = field(init=False)
+    mean: float = field(init=False)
     variance: float = field(init=False)
 
     # Cumulative Distribution Function
@@ -32,7 +33,7 @@ class VoronoiQuantization1D(ABC):
         mid_points = self.build_mid_points(centroids)
 
         # First term is variance of random variable
-        to_return = self.variance
+        to_return = self.variance + self.mean ** 2
 
         # Second term is 2 * \sum_i x_i * E [ X \1_{X \in C_i} ]
         mean_of_each_cell = self.mean_of_each_cell(mid_points)
@@ -40,17 +41,15 @@ class VoronoiQuantization1D(ABC):
 
         # Third and last term is E [ \widehat X^2 ]
         proba_of_each_cell = self.proba_of_each_cell(mid_points)
-        to_return += (centroids * centroids * proba_of_each_cell).sum()
+        to_return += (centroids ** 2 * proba_of_each_cell).sum()
 
         return 0.5 * to_return
 
-    @abstractmethod
-    def lr(self, N: int, n: int):
-        pass
+    def lr(self, N: int, n: int, max_iter):
+        return 0.1
 
     # Optimization methods
     def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
-        centroids.sort()
 
         for i in range(nbr_iterations):
             inv_hessian = inv(self.hessian_distortion(centroids))
@@ -63,12 +62,11 @@ class VoronoiQuantization1D(ABC):
         return centroids, probabilities
 
     def mean_field_clvq_method(self, centroids: np.ndarray, nbr_iterations: int):
-        centroids.sort()
 
         for i in range(nbr_iterations):
 
             gradient = self.gradient_distortion(centroids)
-            lr = self.lr(len(centroids), i)
+            lr = self.lr(len(centroids), i, nbr_iterations)
             centroids = centroids - lr * gradient
 
             centroids.sort()
@@ -78,7 +76,6 @@ class VoronoiQuantization1D(ABC):
         return centroids, probabilities
 
     def deterministic_lloyd_method(self, centroids: np.ndarray, nbr_iterations: int):
-        centroids.sort()
 
         for i in range(nbr_iterations):
             mid_points = self.build_mid_points(centroids)

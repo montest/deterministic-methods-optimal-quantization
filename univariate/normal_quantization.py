@@ -10,9 +10,9 @@ from univariate.voronoi_quantization import VoronoiQuantization1D
 
 @dataclass
 class NormalVoronoiQuantization(VoronoiQuantization1D):
-
     lower_bound_support: float = field(init=False, default=-inf)
     upper_bound_support: float = field(init=False, default=inf)
+    mean: float = field(init=False, default=0)
     variance: float = field(init=False, default=1)
 
     # Cumulative Distribution Function
@@ -27,7 +27,7 @@ class NormalVoronoiQuantization(VoronoiQuantization1D):
     def fpm(self, x: Union[float, np.ndarray]):
         return -self.pdf(x)
 
-    def lr(self, N: int, n: int):
+    def lr(self, N: int, n: int, max_iter: int):
         a = 2.0 * N
         b = np.pi / float(N * N)
         return a / float(a + b * (n + 1.))

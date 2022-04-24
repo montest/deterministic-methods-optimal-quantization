@@ -8,24 +8,25 @@ np.set_printoptions(linewidth=np.inf)
 
 def initialize_quantizer(N):
     np.random.seed(0)
-    # centroids = np.random.normal(0, 1, N)   # Initialize the Voronoi Quantizer
-    centroids = np.random.uniform(0, 1, N)  # Initialize the Voronoi Quantizer
+    centroids = np.random.normal(0, 1, N)   # Initialize the Voronoi Quantizer
+    # centroids = np.random.uniform(0, 1, N)  # Initialize the Voronoi Quantizer
     centroids.sort()
     return centroids
 
 if __name__ == "__main__":
-    N = 100
-    quantization = UniformVoronoiQuantization()
-    centroids, probas = quantization.optimal_quantization(N)
-    print(f"\nDistortion: {quantization.distortion(centroids)}")
+    N = 200
+    # quantization = UniformVoronoiQuantization()
+    # centroids, probas = quantization.optimal_quantization(N)
+    # print(f"\nDistortion: {quantization.distortion(centroids)}")
 
-    print(f"Optimal quantization: \n{centroids}\nwith weights \n{probas}")
-    # quantization = NormalVoronoiQuantization()
+    # print(f"Optimal quantization: \n{centroids}\nwith weights \n{probas}")
+
+    quantization = NormalVoronoiQuantization()
 
     centroids = initialize_quantizer(N)
 
-    centroids, probas = quantization.deterministic_lloyd_method(centroids, 5)
-    centroids, probas = quantization.newton_raphson_method(centroids, 100)
+    centroids, probas = quantization.deterministic_lloyd_method(centroids, 1)
+    centroids, probas = quantization.newton_raphson_method(centroids, 10)
     print(f"\nDistortion: {quantization.distortion(centroids)}")
     print(f"Gradient: {quantization.gradient_distortion(centroids)}")
 
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     # print((centroids*centroids*probas).sum())
 
     centroids = initialize_quantizer(N)
-    centroids, probas = quantization.deterministic_lloyd_method(centroids, 1000)
+    centroids, probas = quantization.deterministic_lloyd_method(centroids, 10000)
     print(f"\nDistortion: {quantization.distortion(centroids)}")
     print(f"Gradient: {quantization.gradient_distortion(centroids)}")
 

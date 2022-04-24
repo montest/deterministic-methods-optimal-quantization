@@ -14,9 +14,9 @@ class UniformVoronoiQuantization(VoronoiQuantization1D):
     mean: float = field(init=False, default=1.0/2.0)
     variance: float = field(init=False, default=1.0/12.0)
 
-    def optimal_quantization(self, N):
+    def optimal_quantization(self, N: int):
         centroids = np.linspace((2.0 - 1.0) / (2.0 * N), (2.0 * N - 1.0) / (2.0 * N), N)
-        probabilities = self.proba_of_each_cell(self.build_mid_points(centroids))
+        probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     # Cumulative Distribution Function

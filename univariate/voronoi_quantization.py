@@ -1,70 +1,100 @@
 import numpy as np
 
 from typing import Union
-from numpy.linalg import inv
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 
 @dataclass
 class VoronoiQuantization1D(ABC):
-
-    lower_bound_support: float = field(init=False)
-    upper_bound_support: float = field(init=False)
     mean: float = field(init=False)
     variance: float = field(init=False)
 
-    # Cumulative Distribution Function
-    @abstractmethod
-    def cdf(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        pass
+    lower_bound_support: float = field(init=False)
+    upper_bound_support: float = field(init=False)
 
-    # Probabilty Density Function
-    @abstractmethod
-    def pdf(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        pass
+    def get_vertices(self, centroids: np.ndarray) -> np.ndarray:
+        """Compute the vertices of the Voronoi quantizer given the centroids.
 
-    # First Partial Moment
-    @abstractmethod
-    def fpm(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        pass
+        :param centroids:
+        :return: list of vertices
+        """
+        vertices = 0.5 * (centroids[1:] + centroids[:-1])
+        vertices = np.insert(vertices, 0, self.lower_bound_support)
+        vertices = np.append(vertices, self.upper_bound_support)
+        return vertices
 
     def distortion(self, centroids: np.ndarray) -> float:
-        mid_points = self.build_mid_points(centroids)
+        """Compute the quadratic distortion for a given quantizer.
+
+        :param centroids:
+        :return: distortion
+        """
+        vertices = self.get_vertices(centroids)
 
         # First term is variance of random variable
         to_return = self.variance + self.mean ** 2
 
         # Second term is 2 * \sum_i x_i * E [ X \1_{X \in C_i} ]
-        mean_of_each_cell = self.mean_of_each_cell(mid_points)
+        mean_of_each_cell = self.cells_expectation(vertices)
         to_return -= 2. * (centroids * mean_of_each_cell).sum()
 
         # Third and last term is E [ \widehat X^2 ]
-        proba_of_each_cell = self.proba_of_each_cell(mid_points)
+        proba_of_each_cell = self.cells_probability(vertices)
         to_return += (centroids ** 2 * proba_of_each_cell).sum()
 
         return 0.5 * to_return
 
-    def lr(self, N: int, n: int, max_iter):
-        return 0.1
+    def gradient_distortion(self, centroids: np.ndarray) -> np.ndarray:
+        """Compute the quadratic distortion's gradient for a given quantizer.
 
-    # Optimization methods
-    def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
+        :param centroids:
+        :return: a list of size N containing the gradients
+        """
+        vertices = self.get_vertices(centroids)
+        to_return = centroids * self.cells_probability(vertices) - self.cells_expectation(vertices)
+        return to_return
+
+    def hessian_distortion(self, centroids: np.ndarray):
+        """Compute the quadratic distortion's Hessian for a given quantizer.
+
+        :param centroids:
+        :return: an array of size (N, N) containing the hessian
+        """
+        N = len(centroids)
+        result = np.zeros((N, N))
+        vertices = self.get_vertices(centroids)
+        proba_of_each_cell = self.cells_probability(vertices)
+        tempDens = self.pdf(vertices)
+
+        a = 0.0
+        for i in range(N - 1):
+            result[i, i] = 2 * proba_of_each_cell[i] - tempDens[i] * a
+            a = (centroids[i + 1] - centroids[i]) * 0.5
+            result[i, i] -= tempDens[i + 1] * a
+            result[i, i + 1] = - a * tempDens[i + 1]
+            result[i + 1, i] = result[i, i + 1]
+        result[N - 1, N - 1] = 2 * proba_of_each_cell[N - 1] - tempDens[N - 1] * a
+        return 0.5 * result
+
+    ## Optimization methods ##
+
+    def deterministic_lloyd_method(self, centroids: np.ndarray, nbr_iterations: int):
 
         for i in range(nbr_iterations):
-            inv_hessian = inv(self.hessian_distortion(centroids))
-            gradient = self.gradient_distortion(centroids)
-            centroids = centroids - np.dot(inv_hessian, gradient)
-            centroids.sort()  # we sort the centroids because Newton-Raphson does not always preserve the order
+            vertices = self.get_vertices(centroids)
+            mean_of_each_cell = self.cells_expectation(vertices)
+            proba_of_each_cell = self.cells_probability(vertices)
+            centroids = mean_of_each_cell / proba_of_each_cell
+
             # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
-        probabilities = self.proba_of_each_cell(self.build_mid_points(centroids))
+        probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def mean_field_clvq_method(self, centroids: np.ndarray, nbr_iterations: int):
 
         for i in range(nbr_iterations):
-
             gradient = self.gradient_distortion(centroids)
             lr = self.lr(len(centroids), i, nbr_iterations)
             centroids = centroids - lr * gradient
@@ -72,58 +102,74 @@ class VoronoiQuantization1D(ABC):
             centroids.sort()
             # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
-        probabilities = self.proba_of_each_cell(self.build_mid_points(centroids))
+        probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
-    def deterministic_lloyd_method(self, centroids: np.ndarray, nbr_iterations: int):
+    def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
 
         for i in range(nbr_iterations):
-            mid_points = self.build_mid_points(centroids)
-            mean_of_each_cell = self.mean_of_each_cell(mid_points)
-            proba_of_each_cell = self.proba_of_each_cell(mid_points)
-            centroids = mean_of_each_cell / proba_of_each_cell
-
+            hessian = self.hessian_distortion(centroids)
+            gradient = self.gradient_distortion(centroids)
+            inv_hessian_dot_grad = np.linalg.solve(hessian, gradient)
+            centroids = centroids - inv_hessian_dot_grad
+            centroids.sort()  # we sort the centroids because Newton-Raphson does not always preserve the order
             # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
-        probabilities = self.proba_of_each_cell(self.build_mid_points(centroids))
+        probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
-    def build_mid_points(self, centroids: np.ndarray) -> np.ndarray:
-        mid_points = 0.5 * (centroids[1:] + centroids[:-1])
-        mid_points = np.insert(mid_points, 0, self.lower_bound_support)
-        mid_points = np.append(mid_points, self.upper_bound_support)
-        return mid_points
+    def lr(self, N: int, n: int, max_iter):
+        return 0.1
 
-    def mean_of_each_cell(self, mid_points: np.ndarray) -> np.ndarray:
-        tempMom = self.fpm(mid_points)
-        mean_on_each_cell = tempMom[1:] - tempMom[:-1]
+
+    def cells_expectation(self, vertices: np.ndarray) -> np.ndarray:
+        """Compute the expectation of $X$ on each cell using the first partial moment function
+
+        :param vertices:
+        :return: list of size N containing $\forall i \in \{ 1, \dots, N \}, \mathbb{E} (X \1_{X \in C_i (\Gamma_N) } )$
+        """
+        first_partial_moment = self.fpm(vertices)
+        mean_on_each_cell = first_partial_moment[1:] - first_partial_moment[:-1]
         return mean_on_each_cell
 
-    def proba_of_each_cell(self, mid_points: np.ndarray) -> np.ndarray:
-        tempProb = self.cdf(mid_points)
-        proba_of_each_cell = tempProb[1:] - tempProb[:-1]
+    def cells_probability(self, vertices: np.ndarray) -> np.ndarray:
+        """Compute the probabilities of $X$ on each cell using the cumulative distribution function (that are the
+        probabilities of the quantizer $\widehat X^N$)
+
+        :param vertices:
+        :return: list of size N containing $\forall i \in \{ 1, \dots, N \}, \mathbb{P} (X \in C_i (\Gamma_N) } )$
+        """
+        cumulated_probability = self.cdf(vertices)
+        proba_of_each_cell = cumulated_probability[1:] - cumulated_probability[:-1]
         return proba_of_each_cell
 
-    def gradient_distortion(self, centroids: np.ndarray) -> np.ndarray:
-        mid_points = self.build_mid_points(centroids)
-        to_return = centroids * self.proba_of_each_cell(mid_points) - self.mean_of_each_cell(mid_points)
-        return to_return
+    @abstractmethod
+    def pdf(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """Probabilty Density Function, can take a float or a list/array as input and returns
+        $$
+            x \rightarrow f_X ( x )
+        $$
+        It needs be implemented in the derived class.
+        """
+        pass
 
-    def hessian_distortion(self, centroids: np.ndarray):
-        N = len(centroids)
-        result = np.zeros((N, N))
-        mid_points = self.build_mid_points(centroids)
-        proba_of_each_cell = self.proba_of_each_cell(mid_points)
-        tempDens = self.pdf(mid_points)
+    @abstractmethod
+    def cdf(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """Cumulative Distribution Function, can take a float or a list/array as input and returns
+        $$
+            x \rightarrow \mathbb{P} ( X \leq x )
+        $$
+        It needs be implemented in the derived class.
+        """
+        pass
 
-        a = 0.0
-        for i in range(N-1):
-            result[i, i] = 2 * proba_of_each_cell[i] - tempDens[i] * a
-            a = (centroids[i+1]-centroids[i]) * 0.5
-            result[i, i] -= tempDens[i+1] * a
-            result[i, i+1] = - a * tempDens[i+1]
-            result[i+1, i] = result[i, i+1]
-        result[N-1, N-1] = 2 * proba_of_each_cell[N-1] - tempDens[N-1] * a
-        return 0.5 * result
-
+    @abstractmethod
+    def fpm(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+        """First Partial Moment, can take a float or a list/array as input and returns
+        $$
+            x \rightarrow \mathbb{E} [ X \mathbb{1}_{X \leq x} ]
+        $$
+        It needs be implemented in the derived class.
+        """
+        pass
 

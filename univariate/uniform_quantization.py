@@ -19,13 +19,13 @@ class UniformVoronoiQuantization(VoronoiQuantization1D):
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
-    # Cumulative Distribution Function
-    def cdf(self, x: Union[float, np.ndarray]):
-        return uniform.cdf(x)
-
     # Probabilty Density Function
     def pdf(self, x: Union[float, np.ndarray]):
         return uniform.pdf(x)
+
+    # Cumulative Distribution Function
+    def cdf(self, x: Union[float, np.ndarray]):
+        return uniform.cdf(x)
 
     # First Partial Moment
     def fpm(self, x: Union[float, np.ndarray]):

@@ -15,13 +15,13 @@ class NormalVoronoiQuantization(VoronoiQuantization1D):
     mean: float = field(init=False, default=0)
     variance: float = field(init=False, default=1)
 
-    # Cumulative Distribution Function
-    def cdf(self, x: Union[float, np.ndarray]):
-        return norm.cdf(x)
-
     # Probabilty Density Function
     def pdf(self, x: Union[float, np.ndarray]):
         return norm.pdf(x)
+
+    # Cumulative Distribution Function
+    def cdf(self, x: Union[float, np.ndarray]):
+        return norm.cdf(x)
 
     # First Partial Moment
     def fpm(self, x: Union[float, np.ndarray]):

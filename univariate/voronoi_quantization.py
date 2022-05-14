@@ -75,7 +75,7 @@ class VoronoiQuantization1D(ABC):
             result[i, i + 1] = - a * tempDens[i + 1]
             result[i + 1, i] = result[i, i + 1]
         result[N - 1, N - 1] = 2 * proba_of_each_cell[N - 1] - tempDens[N - 1] * a
-        return 0.5 * result
+        return result
 
     ## Optimization methods ##
 
@@ -87,7 +87,7 @@ class VoronoiQuantization1D(ABC):
             proba_of_each_cell = self.cells_probability(vertices)
             centroids = mean_of_each_cell / proba_of_each_cell
 
-            # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
@@ -106,6 +106,7 @@ class VoronoiQuantization1D(ABC):
         return centroids, probabilities
 
     def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
+        centroids, probas = self.deterministic_lloyd_method(centroids, 1)
 
         for i in range(nbr_iterations):
             hessian = self.hessian_distortion(centroids)

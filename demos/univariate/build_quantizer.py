@@ -11,6 +11,8 @@ np.set_printoptions(linewidth=np.inf)
 
 
 if __name__ == "__main__":
+    np.random.seed(0)
+
     quantizers = {
         'normal': NormalVoronoiQuantization,
         'lognormal': LogNormalVoronoiQuantization,

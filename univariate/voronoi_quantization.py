@@ -1,3 +1,4 @@
+import scipy
 import numpy as np
 
 from typing import Union
@@ -69,7 +70,7 @@ class VoronoiQuantization1D(ABC):
 
         a = 0.0
         for i in range(N - 1):
-            result[i, i] = 2 * proba_of_each_cell[i] - tempDens[i] * a
+            result[i, i] = 2. * proba_of_each_cell[i] - tempDens[i] * a
             a = (centroids[i + 1] - centroids[i]) * 0.5
             result[i, i] -= tempDens[i + 1] * a
             result[i, i + 1] = - a * tempDens[i + 1]
@@ -100,28 +101,27 @@ class VoronoiQuantization1D(ABC):
             centroids = centroids - lr * gradient
 
             centroids.sort()
-            # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
-        centroids, probas = self.deterministic_lloyd_method(centroids, 1)
+        centroids, probas = self.deterministic_lloyd_method(centroids, 3)
 
         for i in range(nbr_iterations):
             hessian = self.hessian_distortion(centroids)
             gradient = self.gradient_distortion(centroids)
-            inv_hessian_dot_grad = np.linalg.solve(hessian, gradient)
+            inv_hessian_dot_grad = scipy.linalg.solve(hessian, gradient, assume_a='sym')
             centroids = centroids - inv_hessian_dot_grad
             centroids.sort()  # we sort the centroids because Newton-Raphson does not always preserve the order
-            # print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def lr(self, N: int, n: int, max_iter):
-        return 0.1
-
+        return 0.01
 
     def cells_expectation(self, vertices: np.ndarray) -> np.ndarray:
         """Compute the expectation of $X$ on each cell using the first partial moment function

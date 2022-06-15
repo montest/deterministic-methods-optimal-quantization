@@ -7,6 +7,7 @@ from univariate.uniform_quantization import UniformVoronoiQuantization
 np.set_printoptions(precision=5)
 np.set_printoptions(linewidth=np.inf)
 
+
 def initialize_quantizer(N):
     np.random.seed(0)
     centroids = np.random.exponential(1, N)   # Initialize the Voronoi Quantizer
@@ -14,6 +15,7 @@ def initialize_quantizer(N):
     # centroids = np.random.uniform(0, 1, N)  # Initialize the Voronoi Quantizer
     centroids.sort()
     return centroids
+
 
 if __name__ == "__main__":
     N = 100

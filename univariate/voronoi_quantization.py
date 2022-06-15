@@ -81,47 +81,46 @@ class VoronoiQuantization1D(ABC):
     ## Optimization methods ##
 
     def deterministic_lloyd_method(self, centroids: np.ndarray, nbr_iterations: int):
-
+        print("nbr_step;distortion")
         for i in range(nbr_iterations):
             vertices = self.get_vertices(centroids)
             mean_of_each_cell = self.cells_expectation(vertices)
             proba_of_each_cell = self.cells_probability(vertices)
             centroids = mean_of_each_cell / proba_of_each_cell
-
-            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"{i+1};{self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def mean_field_clvq_method(self, centroids: np.ndarray, nbr_iterations: int):
-
+        print("nbr_step;distortion")
         for i in range(nbr_iterations):
             gradient = self.gradient_distortion(centroids)
             lr = self.lr(len(centroids), i, nbr_iterations)
             centroids = centroids - lr * gradient
 
             centroids.sort()
-            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"{i+1};{self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def newton_raphson_method(self, centroids: np.ndarray, nbr_iterations: int):
-        centroids, probas = self.deterministic_lloyd_method(centroids, 3)
-
+        centroids, probas = self.deterministic_lloyd_method(centroids, 20)
+        print("nbr_step;distortion")
         for i in range(nbr_iterations):
             hessian = self.hessian_distortion(centroids)
             gradient = self.gradient_distortion(centroids)
             inv_hessian_dot_grad = scipy.linalg.solve(hessian, gradient, assume_a='sym')
             centroids = centroids - inv_hessian_dot_grad
             centroids.sort()  # we sort the centroids because Newton-Raphson does not always preserve the order
-            print(f"Distortion at step {i+1}: {self.distortion(centroids)}")
+            print(f"{i+1};{self.distortion(centroids)}")
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
 
     def lr(self, N: int, n: int, max_iter):
-        return 0.01
+        return 0.1
 
     def cells_expectation(self, vertices: np.ndarray) -> np.ndarray:
         """Compute the expectation of $X$ on each cell using the first partial moment function

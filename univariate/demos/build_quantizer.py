@@ -31,21 +31,20 @@ if __name__ == "__main__":
     parser.add_argument("-N", "--size", type=int, help="Size of quantizer", required=True)
     parser.add_argument("-d", "--distribution", type=str, choices=['normal', 'lognormal', 'uniform', 'exponential'], help="Distribution of the quantizer to build", required=True)
     parser.add_argument("-m", "--method", type=str, choices=['lloyd', 'mfclvq', 'nr'], help="Optimization method (`mfclvq` stands for mean field clvq and `nr` stands for Newton Raphson)", required=True)
-    parser.add_argument("-n", "--nbr_iter", type=int, help="Number of iteration to apply of the optimization methodr", required=True)
+    parser.add_argument("-n", "--nbr_iter", type=int, help="Number of iteration to apply of the optimization method", required=True)
+    parser.add_argument("-p", "--should_print", type=bool, help="Decide if the distortion should be printed at each iteration", required=False, default=False)
 
     args = parser.parse_args()
 
-    N = args.size
-
     quantization = quantizers.get(args.distribution)()
 
-    centroids = random_sampling.get(args.distribution)(size=N)
+    centroids = random_sampling.get(args.distribution)(size=args.size)
     optimizers = {
         'lloyd': quantization.deterministic_lloyd_method,
         'mfclvq': quantization.mean_field_clvq_method,
         'nr': quantization.newton_raphson_method,
     }
-    centroids, probas = optimizers.get(args.method)(centroids, args.nbr_iter)
+    centroids, probas = optimizers.get(args.method)(centroids, args.nbr_iter, args.should_print)
 
     print(f"centroids  : {centroids}")
     print(f"probas     : {probas}")

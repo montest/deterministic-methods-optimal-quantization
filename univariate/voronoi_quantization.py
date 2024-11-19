@@ -124,6 +124,8 @@ class VoronoiQuantization1D(ABC):
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         return centroids, probabilities
+    
+    # todo: add Levenberg-Marquardt method
 
     def lr(self, N: int, n: int, max_iter):
         return 0.1

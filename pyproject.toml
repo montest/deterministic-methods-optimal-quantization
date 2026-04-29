@@ -1,19 +1,12 @@
-[tool.poetry]
+[project]
 name = "deterministic-methods-optimal-quantization"
 version = "0.1.0"
 description = ""
-authors = ["Thibaut Montes <montes.thibaut@gmail.com>"]
 readme = "README.md"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-numpy = "^2.1.2"
-bokeh = "^3.6.0"
-scipy = "^1.14.1"
-# selenium = "^4.25.0"
-
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-package-mode = false
+requires-python = ">=3.10"
+authors = [{ name = "Thibaut Montes", email = "montes.thibaut@gmail.com" }]
+dependencies = [
+    "numpy>=2.1.2,<3",
+    "bokeh>=3.6,<4",
+    "scipy>=1.14.1,<2",
+]

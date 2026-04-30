@@ -14,6 +14,15 @@ uv sync
 
 That creates or updates a `.venv` with the locked packages. You can run commands with `uv run` (no need to activate the virtual environment first), or activate `.venv` and use `python` as usual.
 
+To work with the **optimizer comparison notebooks** under [`notebooks/`](notebooks/), install dev dependencies (Jupyter, Matplotlib) and keep the process **working directory at the repository root** so `import univariate` works:
+
+```bash
+uv sync --group dev
+uv run jupyter lab
+```
+
+Then open e.g. `notebooks/normal.ipynb` from JupyterLab’s file browser.
+
 If you need a `requirements.txt` for another tool, generate one from the lockfile with:
 
 ```bash
@@ -22,13 +31,14 @@ uv export --format requirements-txt -o requirements.txt
 
 ## Command for building optimal quantizers using different optimization methods
 
-`N` is the size of the quantizer, `n` is the number of steps and `m` is the method chosen (`mfclvq` for Mean Field CLVQ, `lloyd` for Lloyd method and `nr` for Newton Raphson method).
+`N` is the size of the quantizer, `n` is the number of steps and `m` is the method chosen (`mfclvq` for Mean Field CLVQ, `lloyd` for Lloyd, `nr` for Newton–Raphson, and `nrlm` for Newton–Raphson with Levenberg–Marquardt damping).
 
 ### Normal distribution
 ```
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d normal -m mfclvq
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d normal -m lloyd
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d normal -m nr
+uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d normal -m nrlm
 ```
 
 ### Log-Normal distribution
@@ -36,6 +46,7 @@ uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d normal -m nr
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d lognormal -m mfclvq
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d lognormal -m lloyd
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d lognormal -m nr
+uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d lognormal -m nrlm
 ```
 
 ### Exponential distribution
@@ -43,6 +54,7 @@ uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d lognormal -m 
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d exponential -m mfclvq
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d exponential -m lloyd
 uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d exponential -m nr
+uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d exponential -m nrlm
 ```
 
 ### Uniform distribution
@@ -50,4 +62,5 @@ uv run python -m univariate.demos.build_quantizer -N 10 -n 1000 -d exponential -
 uv run python -m univariate.demos.build_quantizer -N 50 -n 1000 -d uniform -m mfclvq
 uv run python -m univariate.demos.build_quantizer -N 50 -n 1000 -d uniform -m lloyd
 uv run python -m univariate.demos.build_quantizer -N 50 -n 1000 -d uniform -m nr
+uv run python -m univariate.demos.build_quantizer -N 50 -n 1000 -d uniform -m nrlm
 ```

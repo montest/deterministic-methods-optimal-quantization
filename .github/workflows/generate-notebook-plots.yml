@@ -1,0 +1,51 @@
+name: Generate Notebook Plots
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'notebooks/**'
+      - 'univariate/**'
+      - '.github/workflows/generate-notebook-plots.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-plots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dev dependencies
+        run: uv sync --group dev --frozen
+
+      - name: Run notebooks (using uv and project config)
+        run: |
+          DETERMINISTIC_QUANTIZATION_LOG_LEVEL=ERROR bash scripts/run_notebooks.sh
+
+      - name: Commit and push generated SVGs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain notebooks/_svg/)" ]; then
+            git add -A notebooks/_svg
+            git commit -m "chore: regenerate notebook plots [skip ci]"
+            git push
+          else
+            echo "No SVG changes detected"
+          fi

@@ -30,4 +30,4 @@ class NormalVoronoiQuantization(VoronoiQuantization1D):
     def lr(self, N: int, n: int, max_iter: int):
         a = 2.0 * N
         b = np.pi / float(N * N)
-        return a / float(a + b * (n + 1.))
+        return a / float(a + b * (n + 1.0))

@@ -10,7 +10,7 @@ from univariate.voronoi_quantization import VoronoiQuantization1D
 
 @dataclass
 class LogNormalVoronoiQuantization(VoronoiQuantization1D):
-    sigma: float = field(default=1.)
+    sigma: float = field(default=1.0)
 
     lower_bound_support: float = field(init=False, default=0)
     upper_bound_support: float = field(init=False, default=inf)
@@ -19,7 +19,7 @@ class LogNormalVoronoiQuantization(VoronoiQuantization1D):
 
     def __post_init__(self):
         self.mean = np.exp(0.5 * self.sigma**2)
-        self.variance = (np.exp(self.sigma**2)-1.0) * np.exp(self.sigma**2)
+        self.variance = (np.exp(self.sigma**2) - 1.0) * np.exp(self.sigma**2)
 
     # Probabilty Density Function
     def pdf(self, x: Union[float, np.ndarray]):

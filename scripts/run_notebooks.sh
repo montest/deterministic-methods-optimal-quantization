@@ -25,6 +25,9 @@ notebooks=(
   "notebooks/exponential.ipynb"
 )
 
+echo "Sanitizing notebook outputs (schema validity)..."
+uv run python scripts/sanitize_notebooks.py "${notebooks[@]}" >/dev/null
+
 echo "Executing notebooks with nbconvert..."
 for nb in "${notebooks[@]}"; do
   echo "==> $nb"

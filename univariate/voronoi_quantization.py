@@ -17,7 +17,7 @@ def _configure_default_logger() -> None:
     # You can override via environment variable:
     # - DETERMINISTIC_QUANTIZATION_LOG_LEVEL=WARNING
     # - DETERMINISTIC_QUANTIZATION_LOG_LEVEL=DEBUG
-    level = os.getenv("DETERMINISTIC_QUANTIZATION_LOG_LEVEL", "INFO").upper()
+    level = os.getenv("DETERMINISTIC_QUANTIZATION_LOG_LEVEL", "ERROR").upper()
     logger.remove()
     logger.add(sys.stderr, level=level)
 

@@ -2,6 +2,7 @@ import scipy
 import numpy as np
 
 import sys
+import os
 from typing import List, Literal, Tuple, Union
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -12,8 +13,13 @@ from loguru import logger
 def _configure_default_logger() -> None:
     # Set INFO as the default level for this project.
     # (Loguru defaults to DEBUG; we want INFO unless the caller overrides.)
+    #
+    # You can override via environment variable:
+    # - DETERMINISTIC_QUANTIZATION_LOG_LEVEL=WARNING
+    # - DETERMINISTIC_QUANTIZATION_LOG_LEVEL=DEBUG
+    level = os.getenv("DETERMINISTIC_QUANTIZATION_LOG_LEVEL", "INFO").upper()
     logger.remove()
-    logger.add(sys.stderr, level="INFO")
+    logger.add(sys.stderr, level=level)
 
 
 _configure_default_logger()
@@ -125,8 +131,6 @@ class VoronoiQuantization1D(ABC):
             proba_of_each_cell = self.cells_probability(vertices)
             centroids = mean_of_each_cell / proba_of_each_cell
             distortions.append(self.distortion(centroids))
-            if (i + 1) in {1, 2, 5, 10, 20, 50} or (i + 1) == nbr_iterations:
-                logger.debug("Lloyd step {}/{}: distortion={}", i + 1, nbr_iterations, distortions[-1])
         probabilities = self.cells_probability(self.get_vertices(centroids))
         logger.info("End Lloyd (final_distortion={})", distortions[-1] if distortions else None)
         return centroids, probabilities, distortions
@@ -149,14 +153,6 @@ class VoronoiQuantization1D(ABC):
 
             centroids.sort()
             distortions.append(self.distortion(centroids))
-            if (i + 1) in {1, 2, 5, 10, 20, 50} or (i + 1) == nbr_iterations:
-                logger.debug(
-                    "MFCLVQ step {}/{}: lr={}, distortion={}",
-                    i + 1,
-                    nbr_iterations,
-                    lr,
-                    distortions[-1],
-                )
         probabilities = self.cells_probability(self.get_vertices(centroids))
         logger.info("End mean-field CLVQ (final_distortion={})", distortions[-1] if distortions else None)
         return centroids, probabilities, distortions
@@ -181,14 +177,10 @@ class VoronoiQuantization1D(ABC):
             centroids = centroids - inv_hessian_dot_grad
             centroids.sort()  # we sort the centroids because Newton-Raphson does not always preserve the order
             distortions.append(self.distortion(centroids))
-            step = num_warmup_iterations + i + 1
-            if step in {num_warmup_iterations + 1, num_warmup_iterations + 2, num_warmup_iterations + 5} or step == nbr_iterations:
-                logger.debug("NR step {}/{}: distortion={}", step, nbr_iterations, distortions[-1])
 
         probabilities = self.cells_probability(self.get_vertices(centroids))
         logger.info("End Newton–Raphson (final_distortion={})", distortions[-1] if distortions else None)
         return centroids, probabilities, distortions
-
 
     def newton_raphson_method_with_levenberg_marquardt(
         self,
@@ -246,12 +238,7 @@ class VoronoiQuantization1D(ABC):
                     improved = True
                     break
                 lambda_ = lambda_ * 10
-                logger.debug(
-                    "NR+LM step {}/{}: no improvement, increasing lambda to {}",
-                    i + 1,
-                    nbr_iterations,
-                    lambda_,
-                )
+                logger.info("NR+LM step {}/{}: no improvement, increasing lambda to {}", i + 1, nbr_iterations, lambda_)
             if not improved:
                 distortions.append(current_distortion)
                 logger.warning(
@@ -262,10 +249,10 @@ class VoronoiQuantization1D(ABC):
                     lambda_,
                 )
             lambda_ = lambda_ * 0.1
+            logger.info("NR+LM step {}/{}: decreasing lambda to {}", i + 1, nbr_iterations, lambda_)
         probabilities = self.cells_probability(self.get_vertices(centroids))
         logger.info("End NR+LM (final_distortion={})", distortions[-1] if distortions else None)
         return centroids, probabilities, distortions
-
 
     def lr(
         self,

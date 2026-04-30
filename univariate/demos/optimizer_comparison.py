@@ -9,7 +9,6 @@ import numpy as np
 
 from univariate.voronoi_quantization import VoronoiQuantization1D
 
-
 MethodKey = Literal["lloyd", "mfclvq", "nr", "nrlm"]
 DiagonalTermType = Literal["identity", "hessian"]
 

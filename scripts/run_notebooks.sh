@@ -32,4 +32,5 @@ for nb in "${notebooks[@]}"; do
 done
 
 echo "All notebooks executed successfully."
+echo "Notebooks overwritten in-place with executed outputs."
 

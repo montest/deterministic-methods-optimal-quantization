@@ -23,6 +23,32 @@ uv run jupyter lab
 
 Then open e.g. `notebooks/normal.ipynb` from JupyterLab’s file browser.
 
+### Running all notebooks (CI / locally)
+
+To execute all notebooks headlessly:
+
+```bash
+scripts/run_notebooks.sh
+```
+
+This script runs `jupyter nbconvert --execute` via `uv` and **overwrites the notebooks in-place** with executed outputs (plots and logs).
+
+Note: the comparison notebooks use **Bokeh** for interactive plots. GitHub’s notebook viewer does not execute JavaScript, so you won't see interactive Bokeh plots rendered on GitHub—open the notebooks in JupyterLab or export to HTML if you need shareable interactive output.
+
+### Logging
+
+This project uses [loguru](https://github.com/Delgan/loguru). Default logging level is **INFO**. You can override it with:
+
+```bash
+export DETERMINISTIC_QUANTIZATION_LOG_LEVEL=WARNING  # or DEBUG
+```
+
+If you don't want logs captured into notebook outputs when running `scripts/run_notebooks.sh`, you can run:
+
+```bash
+DETERMINISTIC_QUANTIZATION_LOG_LEVEL=ERROR scripts/run_notebooks.sh
+```
+
 If you need a `requirements.txt` for another tool, generate one from the lockfile with:
 
 ```bash
